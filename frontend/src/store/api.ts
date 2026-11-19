@@ -1,6 +1,8 @@
 import { createApi, type BaseQueryFn } from "@reduxjs/toolkit/query/react";
 import { isAxiosError, type AxiosRequestConfig } from "axios";
 import { api } from "../lib/api";
+import type { BookFilters } from "../schemas/book.schema";
+import type { Book, BookInput, BookList } from "../types/book";
 
 type ApiRequest = Pick<
   AxiosRequestConfig,
@@ -41,3 +43,43 @@ export const libraryApi = createApi({
   tagTypes: ["Books"],
   endpoints: () => ({}),
 });
+
+export const booksApi = libraryApi.injectEndpoints({
+  endpoints: (build) => ({
+    getBooks: build.query<BookList, BookFilters>({
+      query: (params) => ({ url: "/books", params }),
+      providesTags: ["Books"],
+    }),
+    getBookById: build.query<Book, string>({
+      query: (id) => ({ url: `/books/${encodeURIComponent(id)}` }),
+      providesTags: ["Books"],
+    }),
+    createBook: build.mutation<Book, BookInput>({
+      query: (data) => ({ url: "/books", method: "POST", data }),
+      invalidatesTags: (_result, error) => (error ? [] : ["Books"]),
+    }),
+    updateBook: build.mutation<Book, { id: string; data: Partial<BookInput> }>({
+      query: ({ id, data }) => ({
+        url: `/books/${encodeURIComponent(id)}`,
+        method: "PUT",
+        data,
+      }),
+      invalidatesTags: (_result, error) => (error ? [] : ["Books"]),
+    }),
+    deleteBook: build.mutation<void, string>({
+      query: (id) => ({
+        url: `/books/${encodeURIComponent(id)}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, error) => (error ? [] : ["Books"]),
+    }),
+  }),
+});
+
+export const {
+  useGetBooksQuery,
+  useGetBookByIdQuery,
+  useCreateBookMutation,
+  useUpdateBookMutation,
+  useDeleteBookMutation,
+} = booksApi;

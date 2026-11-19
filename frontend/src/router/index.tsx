@@ -1,6 +1,7 @@
 import { Link, type RouteObject } from "react-router-dom";
-import App from "../App";
 import { Layout } from "../layouts/Layout";
+import { BookDetail } from "../pages/BookDetail";
+import { Home } from "../pages/Home";
 import { NotFound } from "../pages/NotFound";
 import { ProtectedRoute } from "./ProtectedRoute";
 
@@ -12,8 +13,8 @@ export const routes: RouteObject[] = [
   {
     element: <Layout />,
     children: [
-      { index: true, element: <App /> },
-      { path: "books/:id", element: <PageHeading>Book details</PageHeading> },
+      { index: true, element: <Home /> },
+      { path: "books/:id", element: <BookDetail /> },
       { path: "login", element: <PageHeading>Sign in</PageHeading> },
       { path: "register", element: <PageHeading>Register</PageHeading> },
       {

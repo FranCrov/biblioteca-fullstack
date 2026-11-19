@@ -16,6 +16,10 @@ vi.mock("../lib/auth-client", () => ({
   }),
   signOut: vi.fn(),
 }));
+vi.mock("../pages/Home", () => ({ Home: () => <h1>Library</h1> }));
+vi.mock("../pages/BookDetail", () => ({
+  BookDetail: () => <h1>Book details</h1>,
+}));
 
 afterEach(() => {
   cleanup();

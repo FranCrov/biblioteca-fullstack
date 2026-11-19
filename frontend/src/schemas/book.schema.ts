@@ -37,3 +37,23 @@ export function parseBookFilters(params: URLSearchParams): BookFilters {
     genre: parsed.genre || undefined,
   };
 }
+
+const currentYear = new Date().getFullYear();
+
+export const bookFormSchema = z.object({
+  title: z.string().trim().min(1, "Title is required.").max(120),
+  author: z.string().trim().min(1, "Author is required.").max(120),
+  genre: z.string().trim().min(1, "Genre is required.").max(60),
+  publishedYear: z
+    .number({ error: "Enter a publication year." })
+    .int("Use a whole year.")
+    .min(1450, "Year must be 1450 or later.")
+    .max(currentYear + 1, `Year cannot be after ${currentYear + 1}.`),
+  isbn: z
+    .string()
+    .trim()
+    .regex(/^(?:\d{10}|\d{13})$/, "Use a 10- or 13-digit ISBN."),
+  available: z.boolean(),
+});
+
+export type BookFormValues = z.infer<typeof bookFormSchema>;

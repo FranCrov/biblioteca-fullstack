@@ -1,7 +1,9 @@
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { BookCard } from "../components/BookCard";
+import { useSession } from "../lib/auth-client";
 import { parseBookFilters, sortFields } from "../schemas/book.schema";
 import { useGetBooksQuery } from "../store/api";
+import { isAdmin } from "../types/auth";
 
 const sortLabels = {
   addedAt: "Date added",
@@ -14,11 +16,12 @@ const sortLabels = {
   isbn: "ISBN",
   available: "Availability",
 };
-const field = "rounded border border-ink/30 bg-white px-2 py-1";
 
 export function Home() {
   const [params, setParams] = useSearchParams();
   const filters = parseBookFilters(params);
+  const { data: session } = useSession();
+  const canManage = isAdmin(session?.user?.role);
   const { currentData, isFetching, isError, refetch } =
     useGetBooksQuery(filters);
 
@@ -32,35 +35,61 @@ export function Home() {
 
   return (
     <>
-      <h1 className="text-4xl font-bold text-accent">Library</h1>
+      <section className="grid gap-8 pb-10 lg:grid-cols-[1.4fr_1fr] lg:items-end">
+        <div>
+          <p className="eyebrow">The reading room</p>
+          <h1 className="font-display mt-3 text-5xl font-semibold text-accent sm:text-6xl">
+            Library
+          </h1>
+          <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink/70">
+            Browse a curated shelf, find a title by author or genre, and see what is ready to borrow.
+          </p>
+        </div>
+        <div className="surface flex items-center gap-5 p-6">
+          <div>
+            <p className="font-display text-4xl text-accent">
+              {currentData?.meta.total ?? "—"}
+            </p>
+            <p className="text-sm text-ink/60">titles on the shelf</p>
+          </div>
+          <div className="h-12 w-px bg-ink/10" />
+          <div>
+            <p className="font-display text-4xl text-accent">24/7</p>
+            <p className="text-sm text-ink/60">open catalog</p>
+          </div>
+        </div>
+      </section>
+
       <form
         aria-label="Catalog filters"
-        className="my-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+        className="surface mb-8 grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3"
         onSubmit={(event) => event.preventDefault()}
       >
-        <label className="grid gap-1">
-          Search books
+        <label className="grid gap-1 sm:col-span-2 lg:col-span-3">
+          <span className="eyebrow">Search books</span>
           <input
-            className={field}
+            className="field text-lg"
             type="search"
             maxLength={120}
+            placeholder="Title, author, or ISBN…"
             value={params.get("search")?.slice(0, 120) ?? ""}
             onChange={(event) => setFilter("search", event.target.value)}
           />
         </label>
-        <label className="grid gap-1">
+        <label className="grid gap-1 text-sm font-medium">
           Genre
           <input
-            className={field}
+            className="field"
             maxLength={60}
+            placeholder="Fiction, History…"
             value={params.get("genre")?.slice(0, 60) ?? ""}
             onChange={(event) => setFilter("genre", event.target.value)}
           />
         </label>
-        <label className="grid gap-1">
+        <label className="grid gap-1 text-sm font-medium">
           Availability
           <select
-            className={field}
+            className="field"
             value={filters.available ?? ""}
             onChange={(event) => setFilter("available", event.target.value)}
           >
@@ -69,10 +98,10 @@ export function Home() {
             <option value="false">Unavailable</option>
           </select>
         </label>
-        <label className="grid gap-1">
+        <label className="grid gap-1 text-sm font-medium">
           Sort by
           <select
-            className={field}
+            className="field"
             value={filters.sortBy}
             onChange={(event) => setFilter("sortBy", event.target.value)}
           >
@@ -83,10 +112,10 @@ export function Home() {
             ))}
           </select>
         </label>
-        <label className="grid gap-1">
+        <label className="grid gap-1 text-sm font-medium">
           Sort order
           <select
-            className={field}
+            className="field"
             value={filters.sortOrder}
             onChange={(event) => setFilter("sortOrder", event.target.value)}
           >
@@ -94,10 +123,10 @@ export function Home() {
             <option value="asc">Ascending</option>
           </select>
         </label>
-        <label className="grid gap-1">
+        <label className="grid gap-1 text-sm font-medium">
           Books per page
           <select
-            className={field}
+            className="field"
             value={filters.limit}
             onChange={(event) => setFilter("limit", event.target.value)}
           >
@@ -109,6 +138,7 @@ export function Home() {
           </select>
         </label>
       </form>
+
       {isFetching && <p role="status">Loading books…</p>}
       {isError && (
         <div role="alert">
@@ -121,9 +151,19 @@ export function Home() {
       {currentData && (
         <>
           {currentData.data.length === 0 ? (
-            <p>No books found.</p>
+            <div className="surface p-10 text-center">
+              <p className="font-display text-2xl">No books found.</p>
+              <p className="mt-2 text-ink/70">
+                Try a different search, or come back soon.
+              </p>
+              {canManage && (
+                <Link className="btn-primary mt-5" to="/admin">
+                  Add the first book
+                </Link>
+              )}
+            </div>
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {currentData.data.map((book) => (
                 <li key={book.id}>
                   <BookCard book={book} />
@@ -134,20 +174,20 @@ export function Home() {
           {(filters.page > 1 || currentData.meta.totalPages > 1) && (
             <nav
               aria-label="Pagination"
-              className="mt-6 flex items-center gap-4"
+              className="mt-8 flex items-center justify-center gap-4"
             >
               <button
                 type="button"
-                className="underline disabled:opacity-60"
+                className="btn-secondary disabled:opacity-50"
                 disabled={filters.page <= 1}
                 onClick={() => setFilter("page", String(filters.page - 1))}
               >
                 Previous page
               </button>
-              <span>Page {filters.page}</span>
+              <span className="text-sm text-ink/70">Page {filters.page}</span>
               <button
                 type="button"
-                className="underline disabled:opacity-60"
+                className="btn-secondary disabled:opacity-50"
                 disabled={filters.page >= currentData.meta.totalPages}
                 onClick={() => setFilter("page", String(filters.page + 1))}
               >

@@ -1,13 +1,13 @@
-import { Link, type RouteObject } from "react-router-dom";
+import { type RouteObject } from "react-router-dom";
 import { Layout } from "../layouts/Layout";
+import { Admin } from "../pages/Admin";
+import { AuthForm } from "../pages/AuthForm";
 import { BookDetail } from "../pages/BookDetail";
 import { Home } from "../pages/Home";
 import { NotFound } from "../pages/NotFound";
+import { Profile } from "../pages/Profile";
+import { Sessions } from "../pages/Sessions";
 import { ProtectedRoute } from "./ProtectedRoute";
-
-function PageHeading({ children }: { children: string }) {
-  return <h1 className="text-3xl font-bold text-accent">{children}</h1>;
-}
 
 export const routes: RouteObject[] = [
   {
@@ -15,35 +15,20 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <Home /> },
       { path: "books/:id", element: <BookDetail /> },
-      { path: "login", element: <PageHeading>Sign in</PageHeading> },
-      { path: "register", element: <PageHeading>Register</PageHeading> },
+      { path: "login", element: <AuthForm key="login" mode="login" /> },
+      {
+        path: "register",
+        element: <AuthForm key="register" mode="register" />,
+      },
       {
         element: <ProtectedRoute />,
-        children: [
-          { path: "profile", element: <PageHeading>Profile</PageHeading> },
-        ],
+        children: [{ path: "profile", element: <Profile /> }],
       },
       {
         element: <ProtectedRoute roles={["admin"]} />,
         children: [
-          {
-            path: "admin",
-            element: (
-              <>
-                <PageHeading>Manage books</PageHeading>
-                <Link
-                  to="/admin/sesiones"
-                  className="mt-3 inline-block underline"
-                >
-                  User sessions
-                </Link>
-              </>
-            ),
-          },
-          {
-            path: "admin/sesiones",
-            element: <PageHeading>User sessions</PageHeading>,
-          },
+          { path: "admin", element: <Admin /> },
+          { path: "admin/sesiones", element: <Sessions /> },
         ],
       },
       { path: "*", element: <NotFound /> },

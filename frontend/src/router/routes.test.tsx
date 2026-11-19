@@ -20,6 +20,9 @@ vi.mock("../pages/Home", () => ({ Home: () => <h1>Library</h1> }));
 vi.mock("../pages/BookDetail", () => ({
   BookDetail: () => <h1>Book details</h1>,
 }));
+vi.mock("../pages/Admin", () => ({ Admin: () => <h1>Manage books</h1> }));
+vi.mock("../pages/Sessions", () => ({ Sessions: () => <h1>User sessions</h1> }));
+vi.mock("../pages/Profile", () => ({ Profile: () => <h1>Profile</h1> }));
 
 afterEach(() => {
   cleanup();

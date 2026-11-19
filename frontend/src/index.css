@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #faf8f4;
+  --color-ink: #222b35;
+  --color-accent: #245e52;
+}
+
+body {
+  @apply min-h-screen bg-paper text-ink;
+}

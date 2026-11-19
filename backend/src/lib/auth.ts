@@ -1,4 +1,5 @@
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
+import { dash } from "@better-auth/infra";
 import { betterAuth } from "better-auth";
 import { admin } from "better-auth/plugins";
 import type { Db } from "mongodb";
@@ -26,7 +27,7 @@ function createAuth() {
     secret: requireEnv("BETTER_AUTH_SECRET", env.betterAuthSecret),
     emailAndPassword: { enabled: true },
     socialProviders,
-    plugins: [admin({ defaultRole: "user" })],
+    plugins: [admin({ defaultRole: "user" }), dash()],
     account: {
       accountLinking: { enabled: true, trustedProviders: ["github"] },
     },

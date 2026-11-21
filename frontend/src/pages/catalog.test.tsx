@@ -34,7 +34,7 @@ afterEach(() => {
   api.defaults.adapter = adapter;
 });
 
-function openCatalog(path: string) {
+function openCatalog(path: string, catalogEmpty = false) {
   const calls: string[] = [];
   api.defaults.adapter = async (config) => {
     const url = api.getUri(config);
@@ -49,12 +49,20 @@ function openCatalog(path: string) {
       };
       throw new AxiosError("Not found", undefined, config, undefined, missing);
     }
-    const page = Number(
-      new URL(url, "http://localhost").searchParams.get("page"),
-    );
+    const query = new URL(url, "http://localhost").searchParams;
+    const page = Number(query.get("page"));
+    const empty = catalogEmpty || query.get("search") === "no match";
     return {
       ...response,
-      data: { data: [book], meta: { page, limit: 5, totalPages: 2, total: 6 } },
+      data: {
+        data: empty ? [] : [book],
+        meta: {
+          page,
+          limit: 5,
+          totalPages: empty ? 0 : 2,
+          total: empty ? 0 : 6,
+        },
+      },
     };
   };
   const store = configureStore({
@@ -99,4 +107,24 @@ test.each([
   const { calls } = openCatalog(`/books/${id}`);
   expect(await screen.findByRole("heading", { name: heading })).toBeDefined();
   expect(calls).toEqual([`/api/v1/books/${id}`]);
+});
+
+test("recovers from a filtered empty result and resets pagination", async () => {
+  const { router } = openCatalog(
+    "/?search=no+match&available=true&page=2&limit=5",
+  );
+  expect(
+    await screen.findByRole("heading", { name: "No matching books" }),
+  ).toBeDefined();
+  fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+  expect(await screen.findByRole("link", { name: book.title })).toBeDefined();
+  expect(router.state.location.search).toBe("?limit=5");
+});
+
+test("distinguishes an empty collection from a filtered result", async () => {
+  openCatalog("/", true);
+  expect(
+    await screen.findByRole("heading", { name: "The collection is empty" }),
+  ).toBeDefined();
+  expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
 });

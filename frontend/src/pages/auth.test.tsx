@@ -5,7 +5,7 @@ import { routes } from "../router";
 
 const auth = vi.hoisted(() => ({
   login: vi.fn(),
-  github: vi.fn(),
+  social: vi.fn(),
   register: vi.fn(),
   signedIn: false,
 }));
@@ -14,7 +14,7 @@ vi.mock("../lib/auth-client", () => ({
     isPending: false,
     data: auth.signedIn ? { user: { role: "user" } } : null,
   }),
-  signIn: { email: auth.login, social: auth.github },
+  signIn: { email: auth.login, social: auth.social },
   signUp: { email: auth.register },
   signOut: vi.fn(),
 }));
@@ -60,17 +60,39 @@ test("renders an unsuccessful email sign-in without leaving the form", async () 
   expect(router.state.location.pathname).toBe("/login");
 });
 
-test("uses the GitHub provider and same-origin callback", async () => {
-  auth.github.mockResolvedValue({ error: { status: 404 } });
+test("uses the GitHub provider and same-origin callbacks", async () => {
+  auth.social.mockResolvedValue({ error: { status: 404 } });
   open("/login");
   fireEvent.click(screen.getByRole("button", { name: "Continue with GitHub" }));
   expect((await screen.findByRole("alert")).textContent).toBe(
     "Could not sign in with GitHub.",
   );
-  expect(auth.github).toHaveBeenCalledWith({
+  expect(auth.social).toHaveBeenCalledWith({
     provider: "github",
     callbackURL: "/",
+    errorCallbackURL: "/login?providerError=1",
   });
+});
+
+test("uses the Google provider and same-origin callbacks", async () => {
+  auth.social.mockResolvedValue({ error: { status: 404 } });
+  open("/login");
+  fireEvent.click(screen.getByRole("button", { name: "Continue with Google" }));
+  expect((await screen.findByRole("alert")).textContent).toBe(
+    "Could not sign in with Google.",
+  );
+  expect(auth.social).toHaveBeenCalledWith({
+    provider: "google",
+    callbackURL: "/",
+    errorCallbackURL: "/login?providerError=1",
+  });
+});
+
+test("shows a provider error after an OAuth redirect", () => {
+  open("/login?providerError=1");
+  expect(screen.getByRole("alert").textContent).toBe(
+    "The provider could not complete sign-in. Try again.",
+  );
 });
 
 test.each(["/login", "/register"])(

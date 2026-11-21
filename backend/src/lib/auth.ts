@@ -6,27 +6,47 @@ import type { Db } from "mongodb";
 import { env, requireEnv } from "../config/env.js";
 import { getDb } from "../config/db.js";
 
+export interface SocialCredentials {
+  githubClientId?: string;
+  githubClientSecret?: string;
+  googleClientId?: string;
+  googleClientSecret?: string;
+}
+
+export function buildSocialProviders(config: SocialCredentials) {
+  const providers: {
+    github?: { clientId: string; clientSecret: string };
+    google?: { clientId: string; clientSecret: string };
+  } = {};
+
+  if (config.githubClientId && config.githubClientSecret) {
+    providers.github = {
+      clientId: config.githubClientId,
+      clientSecret: config.githubClientSecret,
+    };
+  }
+
+  if (config.googleClientId && config.googleClientSecret) {
+    providers.google = {
+      clientId: config.googleClientId,
+      clientSecret: config.googleClientSecret,
+    };
+  }
+
+  return providers;
+}
+
 function createAuth() {
   const db = getDb();
   if (!db)
     throw new Error("MongoDB must be connected before authentication is used");
-
-  const socialProviders =
-    env.githubClientId && env.githubClientSecret
-      ? {
-          github: {
-            clientId: env.githubClientId,
-            clientSecret: env.githubClientSecret,
-          },
-        }
-      : {};
 
   return betterAuth({
     database: mongodbAdapter(db as unknown as Db),
     baseURL: env.betterAuthUrl,
     secret: requireEnv("BETTER_AUTH_SECRET", env.betterAuthSecret),
     emailAndPassword: { enabled: true },
-    socialProviders,
+    socialProviders: buildSocialProviders(env),
     plugins: [admin({ defaultRole: "user" }), dash()],
     account: {
       accountLinking: { enabled: true, trustedProviders: ["github"] },

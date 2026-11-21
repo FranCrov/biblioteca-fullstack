@@ -25,6 +25,23 @@ On later runs, only the last command is needed. To see usage without starting an
 
 These are **public, local-only fixtures**, not production credentials. Do not forward or share the ports. The seed checks both existing accounts before creating a missing one; a password or role conflict stops startup rather than overwriting an account. It does not seed books.
 
+## Hosted OAuth
+
+The API enables GitHub and Google sign-in when their credential pairs are set. Configure these variables on the API service:
+
+| Variable | Purpose |
+| --- | --- |
+| `BETTER_AUTH_URL` | Public frontend origin that proxies `/api/*` to the API |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | GitHub OAuth app credentials |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client credentials |
+
+Register these callback URLs in the corresponding providers:
+
+- `https://biblioteca-fullstack-1.onrender.com/api/auth/callback/github`
+- `https://biblioteca-fullstack-1.onrender.com/api/auth/callback/google`
+
+For local OAuth testing, use `http://localhost:5173/api/auth/callback/github` and `http://localhost:5173/api/auth/callback/google`. A provider with only one credential configured is omitted instead of receiving a broken sign-in attempt. Email and password sign-in remains available in every environment.
+
 ## Stop and return
 
 Press **Ctrl+C** in the launcher terminal to stop its API and UI. MongoDB is left running. The next launch generates a new signing secret, so sign in again if needed.

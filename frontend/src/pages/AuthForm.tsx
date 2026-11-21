@@ -10,7 +10,10 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const title = creating ? "Register" : "Sign in";
   const { data, isPending, error } = useSession();
   const [params] = useSearchParams();
-  const [githubPending, setGithubPending] = useState(false);
+  const providerError = params.get("providerError") === "1";
+  const [pendingProvider, setPendingProvider] = useState<
+    "github" | "google" | null
+  >(null);
   const {
     register,
     handleSubmit,
@@ -66,18 +69,20 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     }
   }
 
-  async function github() {
-    setGithubPending(true);
+  async function social(provider: "github" | "google") {
+    setPendingProvider(provider);
     clearErrors();
     try {
       const result = await signIn.social({
-        provider: "github",
+        provider,
         callbackURL: "/",
+        errorCallbackURL: "/login?providerError=1",
       });
-      if (result.error) throw new Error("GitHub sign-in failed");
+      if (result.error) throw new Error(`${provider} sign-in failed`);
     } catch {
-      setError("root", { message: "Could not sign in with GitHub." });
-      setGithubPending(false);
+      const label = provider === "github" ? "GitHub" : "Google";
+      setError("root", { message: `Could not sign in with ${label}.` });
+      setPendingProvider(null);
     }
   }
 
@@ -90,7 +95,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     email: "email",
     password: creating ? "new-password" : "current-password",
   };
-  const busy = isSubmitting || githubPending;
+  const busy = isSubmitting || pendingProvider !== null;
 
   return (
     <section className="mx-auto max-w-md">
@@ -106,6 +111,11 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         </p>
         {!creating && params.get("registered") === "1" && (
           <p role="status">Account created. You can now sign in.</p>
+        )}
+        {!creating && providerError && (
+          <p role="alert">
+            The provider could not complete sign-in. Try again.
+          </p>
         )}
         <form
           aria-label={title}
@@ -146,14 +156,28 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             {isSubmitting ? "Please wait…" : title}
           </button>
           {!creating && (
-            <button
-              disabled={busy}
-              className="btn-secondary"
-              type="button"
-              onClick={github}
-            >
-              {githubPending ? "Connecting to GitHub…" : "Continue with GitHub"}
-            </button>
+            <div className="grid gap-2">
+              <button
+                disabled={busy}
+                className="btn-secondary"
+                type="button"
+                onClick={() => social("github")}
+              >
+                {pendingProvider === "github"
+                  ? "Connecting to GitHub…"
+                  : "Continue with GitHub"}
+              </button>
+              <button
+                disabled={busy}
+                className="btn-secondary"
+                type="button"
+                onClick={() => social("google")}
+              >
+                {pendingProvider === "google"
+                  ? "Connecting to Google…"
+                  : "Continue with Google"}
+              </button>
+            </div>
           )}
         </form>
         <Link

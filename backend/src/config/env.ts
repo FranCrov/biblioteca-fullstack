@@ -10,6 +10,8 @@ export const env = {
   betterAuthUrl: process.env.BETTER_AUTH_URL ?? "http://localhost:5173",
   githubClientId: process.env.GITHUB_CLIENT_ID,
   githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
+  googleClientId: process.env.GOOGLE_CLIENT_ID,
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
 };
 
 export function requireEnv(name: string, value: string | undefined): string {

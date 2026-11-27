@@ -1,7 +1,7 @@
 # Biblioteca academic closeout
 
 Individual submission. `Book` is the only domain model. This is the shared roadmap; the root README remains the submission guide.
-Branch: `feat/academic-finish`. First delivery: roadmap plus STEP-13 (forecast: under 400 authored changed lines). Runner: Vitest via npm. Later steps are separate reviewable units.
+Branch: `feat/academic-finish`. First delivery: roadmap plus STEP-13 (forecast: under 400 authored changed lines; strategy: ask-on-risk). Runner: Vitest via npm. Later steps are separate reviewable units.
 
 ## Specs
 
@@ -20,10 +20,10 @@ Provider references: [Groq Free limits](https://console.groq.com/docs/rate-limit
 
 ## Tasks
 
-- [x] T1 · S1–S10 · inline · Write the shared roadmap and link it from the README and local runbook.
-- [ ] T2 · S3 · inline · STEP-13 confirmation modal; Risk: item 1 (gates existing permanent deletion), item 4 (duplicate submission).
+- [x] T1 · S1–S10 · inline · Shared roadmap linked from the README and local runbook. Commit: `dfcb670`.
+- [x] T2 · S3 · inline + independent verification · STEP-13 modal verified locally. Commit: `b55ef2e`. Risk: item 1 (gates existing permanent deletion), item 4 (duplicate submission).
 - [ ] T3 · S2 · pending · STEP-12 collect authenticated deployment evidence; requires authorized access for remote checks. No blocker for local work.
-- [ ] T4 · S4 · planned · STEP-14 archive and permanent delete rules.
+- [ ] T4 · S4 · pending decision · STEP-14: decide whether permanent deletion requires archiving first or remains available for active books.
 - [ ] T5 · S5 · planned · STEP-15 Google production verification.
 - [ ] T6 · S6 · planned · STEP-16 pagination.
 - [ ] T7 · S7 · planned · STEP-17 Swagger 2.0.
@@ -36,3 +36,4 @@ Provider references: [Groq Free limits](https://console.groq.com/docs/rate-limit
 
 - L1 — “bueno listo, agamoslo con groq free y fue. arma la documentacion en el proyecto con todo y comenzemos con el desarrollo”
 - L2 — 2026-11-27: Baseline `717bfae`. First development slice is STEP-13. The previous local-only runbook excluded Groq and chat; this roadmap explicitly brings them into STEP-20. No push, cloud changes, or activation of billing is authorized by this local work.
+- L3 — STEP-13: four modal tests failed before implementation; final focused test passed 8/8, and `npm.cmd --prefix frontend run verify` passed 30 tests, typecheck, lint, and build (nonblocking bundle-size warning). Independent headless Chrome probes with local fixtures verified focus on Cancel, Escape and focus restoration on cancel, correct ISBN selection for identical titles, one DELETE while pending, and error/retry. Existing create/edit behavior matched the baseline. Focus after successful deletion can fall back to the document body when the opener is removed, as it did at baseline. No production browser check was attempted. Rollback boundary: `b55ef2e` (the modal, its admin wiring, and tests); no backend changes. T1 and T2 total 214 authored changed lines, excluding this evidence-only update. Native receipt review was disabled for this clone.

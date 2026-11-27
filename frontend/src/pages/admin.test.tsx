@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, expect, test, vi } from "vitest";
 import { Admin } from "./Admin";
@@ -88,9 +88,8 @@ test("translates a duplicate ISBN into a readable error", async () => {
   );
 });
 
-test("edits and deletes an existing title after confirmation", async () => {
+test("edits an existing title", async () => {
   open([book]);
-  vi.spyOn(window, "confirm").mockReturnValue(true);
 
   fireEvent.click(screen.getByRole("button", { name: `Edit ${book.title}` }));
   fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Updated Book" } });
@@ -100,7 +99,85 @@ test("edits and deletes an existing title after confirmation", async () => {
     id: book.id,
     data: { title: "Updated Book" },
   });
+});
 
+// jsdom does not implement the native modal lifecycle or keyboard dismissal.
+HTMLDialogElement.prototype.showModal ??= function () { this.open = true; };
+HTMLDialogElement.prototype.close ??= function () { this.open = false; };
+
+function openDeleteDialog() {
   fireEvent.click(screen.getByRole("button", { name: `Delete ${book.title}` }));
-  await waitFor(() => expect(api.remove).toHaveBeenCalledWith(book.id));
+  return screen.getByRole("dialog", { name: `Delete “${book.title}”?` });
+}
+
+test.each(["Cancel", "Escape"])("dismisses deletion with %s without sending a request", (action) => {
+  open([book]);
+  const dialog = openDeleteDialog();
+  const cancel = within(dialog).getByRole("button", { name: "Cancel" });
+  expect(document.activeElement).toBe(cancel);
+  expect(dialog.textContent).toContain("This cannot be undone.");
+  expect(api.remove).not.toHaveBeenCalled();
+
+  if (action === "Escape") {
+    fireEvent(dialog, new Event("cancel", { bubbles: true, cancelable: true }));
+  } else {
+    fireEvent.click(cancel);
+  }
+
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(api.remove).not.toHaveBeenCalled();
+  expect(screen.getByText(book.title)).toBeDefined();
+});
+
+test("confirms one permanent deletion and closes on success", async () => {
+  open([book]);
+  let complete!: () => void;
+  api.remove.mockReturnValue(new Promise((resolve) => {
+    complete = () => resolve({ data: undefined });
+  }));
+  const dialog = openDeleteDialog();
+  const confirm = within(dialog).getByRole("button", { name: "Delete permanently" });
+  fireEvent.click(confirm);
+  fireEvent.click(confirm);
+  fireEvent(dialog, new Event("cancel", { bubbles: true, cancelable: true }));
+
+  expect(api.remove).toHaveBeenCalledExactlyOnceWith(book.id);
+  expect(within(dialog).getByRole("status").textContent).toBe("Deleting…");
+  expect(screen.getByRole("dialog")).toBe(dialog);
+
+  complete();
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+});
+
+test("keeps a failed deletion open and allows a retry", async () => {
+  open([book]);
+  api.remove.mockResolvedValueOnce({ error: { status: 500, message: "Deletion failed." } });
+  const dialog = openDeleteDialog();
+  const confirm = within(dialog).getByRole("button", { name: "Delete permanently" });
+  fireEvent.click(confirm);
+
+  expect((await within(dialog).findByRole("alert")).textContent).toBe("Deletion failed.");
+  expect(screen.getByText(book.title)).toBeDefined();
+  fireEvent.click(confirm);
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(api.remove).toHaveBeenCalledTimes(2);
+});
+
+// S3: duplicate display titles must not collapse record identity.
+test("confirms only the second record when two books have the same title", async () => {
+  const other = { ...book, id: "book-2", author: "Other Writer", isbn: "9876543210" };
+  open([book, other]);
+  const row = screen.getByRole("row", { name: /Other Writer/ });
+  fireEvent.click(within(row).getByRole("button", { name: `Delete ${book.title}` }));
+  const dialog = screen.getByRole("dialog", { name: `Delete “${book.title}”?` });
+  expect(dialog.getAttribute("aria-describedby")).toBeTruthy();
+  expect(dialog.textContent).toContain(`ISBN ${other.isbn}`);
+  expect(api.remove).not.toHaveBeenCalled();
+  api.remove.mockResolvedValueOnce({ error: { status: 500, message: "Fixture deletion failed." } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Delete permanently" }));
+  expect((await within(dialog).findByRole("alert")).textContent).toBe("Fixture deletion failed.");
+  fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.getByRole("row", { name: /Other Writer/ })).toBe(row);
+  expect(api.remove).toHaveBeenCalledExactlyOnceWith(other.id);
 });

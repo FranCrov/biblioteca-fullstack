@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BookForm } from "../components/BookForm";
+import { ConfirmBookDeletion } from "../components/ConfirmBookDeletion";
 import { parseBookFilters, type BookFormValues } from "../schemas/book.schema";
 import {
   useCreateBookMutation,
@@ -23,6 +24,7 @@ function errorMessage(error: unknown, fallback: string) {
 export function Admin() {
   const [editing, setEditing] = useState<Book>();
   const [creating, setCreating] = useState(false);
+  const [pendingDeletion, setPendingDeletion] = useState<Book>();
   const { currentData, isFetching, isError } = useGetBooksQuery(filters);
   const [createBook] = useCreateBookMutation();
   const [updateBook] = useUpdateBookMutation();
@@ -43,9 +45,8 @@ export function Admin() {
   }
 
   async function remove(book: Book) {
-    if (!window.confirm(`Delete “${book.title}”?`)) return;
     const result = await deleteBook(book.id);
-    if ("error" in result) window.alert(errorMessage(result.error, "Could not delete the book."));
+    return "error" in result ? result.error?.message || "Could not delete the book." : undefined;
   }
 
   const panelOpen = creating || !!editing;
@@ -122,7 +123,7 @@ export function Admin() {
                           </button>
                           <button
                             className="btn-quiet btn-danger"
-                            onClick={() => remove(book)}
+                            onClick={() => setPendingDeletion(book)}
                             type="button"
                           >
                             Delete {book.title}
@@ -165,6 +166,13 @@ export function Admin() {
           )}
         </aside>
       </div>
+      {pendingDeletion && (
+        <ConfirmBookDeletion
+          book={pendingDeletion}
+          onClose={() => setPendingDeletion(undefined)}
+          onConfirm={() => remove(pendingDeletion)}
+        />
+      )}
     </>
   );
 }

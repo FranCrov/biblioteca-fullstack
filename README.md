@@ -7,6 +7,7 @@ The `Book` entity stores a title, author, genre, and ISBN (strings), publication
 - [GitHub repository](https://github.com/FranCrov/biblioteca-fullstack)
 - [Frontend on Render](https://biblioteca-fullstack-1.onrender.com)
 - [Backend on Render](https://biblioteca-fullstack-z28i.onrender.com) ([health check](https://biblioteca-fullstack-z28i.onrender.com/health))
+- [Academic roadmap and acceptance checks](odd/tasks/academic-finish.md)
 
 ## Run the local demo on Windows
 
